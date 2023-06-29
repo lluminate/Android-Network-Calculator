@@ -1,4 +1,4 @@
-package com.networkcalculator.app
+package com.networkcalculator.subnetcalculator
 
 import org.junit.Test
 
