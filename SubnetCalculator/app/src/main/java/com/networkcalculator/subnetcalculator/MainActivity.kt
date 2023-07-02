@@ -33,9 +33,11 @@ import com.networkcalculator.subnetcalculator.ui.theme.SubnetCalculatorTheme
 import kotlin.math.log2
 import kotlin.math.pow
 
-var maskBits = 0
-var subnetMask = ""
-var hosts = 0
+var maskBits by mutableStateOf(0)
+var subnetMask by mutableStateOf("")
+var hosts by mutableStateOf(0)
+var ipInput by mutableStateOf("192.168.0.1")
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -127,20 +129,19 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
                 .padding(bottom = 32.dp)
                 .fillMaxWidth()
         )
-        MaskBitsDropdownMenu(
-            listItems = listOf("30", "29", "28", "27", "26", "25", "24", "23", "22", "21", "20", "19", "18", "17", "16", "15", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"),
-            menuLabel = "Mask Bits",
+        MaskBitsDropdownMenu()
+        SubnetMaskDropdownMenu()
+        HostsDropdownMenu()
+        Spacer(modifier = Modifier.height(32.dp))
+        Text(
+            text = "Network: $ipInput/$maskBits" +
+                    "\nNetmask: $subnetMask" +
+                    "\nIp range: $ipInput" +
+                    "\n$ipInput" +
+                    "\nHosts/Net: $hosts" +
+                    "\nBroadcast: $ipInput",
             modifier = Modifier
-        )
-        SubnetMaskDropdownMenu(
-            listItems = listOf("255.255.255.252", "255.255.255.248", "255.255.255.240", "255.255.255.224", "255.255.255.192", "255.255.255.128", "255.255.255.0", "255.255.254.0", "255.255.252.0", "255.255.248.0", "255.255.240.0", "255.255.224.0", "255.255.192.0", "255.255.128.0", "255.255.0.0", "255.254.0.0", "255.252.0.0", "255.248.0.0", "255.240.0.0", "255.224.0.0", "255.192.0.0", "255.128.0.0", "255.0.0.0", "254.0.0.0", "252.0.0.0", "248.0.0.0", "240.0.0.0", "224.0.0.0", "192.0.0.0", "128.0.0.0"),
-            menuLabel = "Subnet Mask",
-            modifier = Modifier
-        )
-        HostsDropdownMenu(
-            listItems = listOf("2", "6", "14", "30", "62", "126", "254", "510", "1022", "2046", "4094", "8190", "16382", "32766", "65534", "131070", "262142", "524286", "1048574", "2097150", "4194302", "8388606", "16777214", "33554430", "67108862", "134217726", "268435454", "536870910", "1073741822", "2147483646"),
-            menuLabel = "Hosts/Net",
-            modifier = Modifier
+                .padding(bottom = 16.dp)
         )
         Spacer(modifier = Modifier.height(150.dp))
     }
@@ -149,10 +150,15 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MaskBitsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modifier = Modifier) {
+fun MaskBitsDropdownMenu(modifier: Modifier = Modifier) {
+    val listItems = listOf("30", "29", "28", "27", "26", "25", "24", "23", "22", "21", "20", "19", "18", "17", "16", "15", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1")
     var expanded by remember { mutableStateOf(false) }
     var maskBitsSelectedItem by remember { mutableStateOf(listItems[0]) }
-
+    val (a, b, c) = maskBitsFunction(maskBitsSelectedItem.toInt())
+    maskBits = a
+    subnetMask = b
+    hosts = c
+    println("MaskBitsDropdown")
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = {
@@ -160,10 +166,10 @@ fun MaskBitsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: M
         }
     ) {
         OutlinedTextField(
-            value = maskBitsSelectedItem,
+            value = maskBits.toString(),
             onValueChange = { },
             readOnly = true,
-            label = { Text(text = menuLabel) },
+            label = { Text(text = "Mask Bits") },
             modifier = modifier.menuAnchor(),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
@@ -181,10 +187,6 @@ fun MaskBitsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: M
                     text = { Text(text = selectedOption) },
                     onClick = {
                         maskBitsSelectedItem = selectedOption
-                        val (a, b, c) = maskBitsFunction(maskBitsSelectedItem.toInt())
-                        maskBits = a
-                        subnetMask = b
-                        hosts = c
                         expanded = false
                     }
                 )
@@ -196,10 +198,15 @@ fun MaskBitsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: M
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubnetMaskDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modifier = Modifier) {
+fun SubnetMaskDropdownMenu(modifier: Modifier = Modifier) {
+    val listItems = listOf("255.255.255.252", "255.255.255.248", "255.255.255.240", "255.255.255.224", "255.255.255.192", "255.255.255.128", "255.255.255.0", "255.255.254.0", "255.255.252.0", "255.255.248.0", "255.255.240.0", "255.255.224.0", "255.255.192.0", "255.255.128.0", "255.255.0.0", "255.254.0.0", "255.252.0.0", "255.248.0.0", "255.240.0.0", "255.224.0.0", "255.192.0.0", "255.128.0.0", "255.0.0.0", "254.0.0.0", "252.0.0.0", "248.0.0.0", "240.0.0.0", "224.0.0.0", "192.0.0.0", "128.0.0.0")
     var expanded by remember { mutableStateOf(false) }
     var subnetMaskSelectedItem by remember { mutableStateOf(listItems[0]) }
-
+    val (a, b, c) = subnetMaskFunction(subnetMaskSelectedItem)
+    maskBits = a
+    subnetMask = b
+    hosts = c
+    println("SubnetMaskDropdown")
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = {
@@ -207,10 +214,10 @@ fun SubnetMaskDropdownMenu(listItems: List<String>, menuLabel: String, modifier:
         }
     ) {
         OutlinedTextField(
-            value = subnetMaskSelectedItem,
+            value = subnetMask,
             onValueChange = { },
             readOnly = true,
-            label = { Text(text = menuLabel) },
+            label = { Text(text = "Subnet Mask") },
             modifier = modifier.menuAnchor(),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
@@ -228,10 +235,6 @@ fun SubnetMaskDropdownMenu(listItems: List<String>, menuLabel: String, modifier:
                     text = { Text(text = selectedOption) },
                     onClick = {
                         subnetMaskSelectedItem = selectedOption
-                        val (a, b, c) = subnetMaskFunction(subnetMaskSelectedItem)
-                        maskBits = a
-                        subnetMask = b
-                        hosts = c
                         expanded = false
                     }
                 )
@@ -243,10 +246,15 @@ fun SubnetMaskDropdownMenu(listItems: List<String>, menuLabel: String, modifier:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HostsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modifier = Modifier) {
+fun HostsDropdownMenu(modifier: Modifier = Modifier) {
+    val listItems = listOf("2", "6", "14", "30", "62", "126", "254", "510", "1022", "2046", "4094", "8190", "16382", "32766", "65534", "131070", "262142", "524286", "1048574", "2097150", "4194302", "8388606", "16777214", "33554430", "67108862", "134217726", "268435454", "536870910", "1073741822", "2147483646")
     var expanded by remember { mutableStateOf(false) }
     var hostsSelectedItem by remember { mutableStateOf(listItems[0]) }
-
+    val (a, b, c) = hostsFunction(hostsSelectedItem.toInt())
+    maskBits = a
+    subnetMask = b
+    hosts = c
+    println("HostsDropdown")
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = {
@@ -254,10 +262,10 @@ fun HostsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modi
         }
     ) {
         OutlinedTextField(
-            value = hostsSelectedItem,
-            onValueChange = { },
+            value = hosts.toString(),
+            onValueChange = {},
             readOnly = true,
-            label = { Text(text = menuLabel) },
+            label = { Text(text = "Hosts/Net") },
             modifier = modifier.menuAnchor(),
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(
@@ -275,10 +283,6 @@ fun HostsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modi
                     text = { Text(text = selectedOption) },
                     onClick = {
                         hostsSelectedItem = selectedOption
-                        val (a, b, c) = hostsFunction(hostsSelectedItem.toInt())
-                        maskBits = a
-                        subnetMask = b
-                        hosts = c
                         expanded = false
                     }
                 )
@@ -291,7 +295,6 @@ fun HostsDropdownMenu(listItems: List<String>, menuLabel: String, modifier: Modi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditIpAddress(modifier: Modifier = Modifier) {
-    var ipInput by remember { mutableStateOf("") }
     OutlinedTextField(
         value = ipInput,
         label = { Text("IP Address") },
