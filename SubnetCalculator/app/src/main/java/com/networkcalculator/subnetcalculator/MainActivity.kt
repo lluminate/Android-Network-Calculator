@@ -51,6 +51,62 @@ class MainActivity : ComponentActivity() {
 }
 
 
+fun maskBitsFunction(maskBits: Int = 0): Triple<Int, String, Int> {
+    val hosts = ((2.0).pow(32 - maskBits) - 2).toInt()
+    var binary = ""
+    var subnetMask: String = ""
+    repeat(maskBits) {
+        binary = binary + "1"
+    }
+
+    repeat(32 - maskBits) {
+        binary = binary + "0"
+    }
+
+    for (i in binary.chunked(8)) {
+        val decimal = i.toInt(2)
+        subnetMask = subnetMask + "$decimal."
+    }
+
+    subnetMask = subnetMask.dropLast(1)
+    return Triple(maskBits, subnetMask, hosts)
+}
+
+
+fun subnetMaskFunction(subnetMask: String): Triple<Int, String, Int> {
+    var maskBits = 0
+    for (i in subnetMask.split(".").toTypedArray()) {
+        val binary = Integer.toBinaryString(i.toInt()).count { it == '1' }
+        maskBits = maskBits + binary.toInt()
+    }
+
+    val hosts = ((2.0).pow(32 - maskBits) - 2).toInt()
+    return Triple(maskBits, subnetMask, hosts)
+}
+
+
+fun hostsFunction(hosts: Int = 0): Triple<Int, String, Int> {
+    val maskBits = 32 - log2((hosts + 2.0)).toInt()
+    var binary = ""
+    var subnetMask: String = ""
+    repeat(maskBits) {
+        binary = binary + "1"
+    }
+
+    repeat(32 - maskBits) {
+        binary = binary + "0"
+    }
+
+    for (i in binary.chunked(8)) {
+        val decimal = i.toInt(2)
+        subnetMask = subnetMask + "$decimal."
+    }
+
+    subnetMask = subnetMask.dropLast(1)
+    return Triple(maskBits, subnetMask, hosts)
+}
+
+
 @Composable
 fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
     Column(
@@ -69,17 +125,17 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
         )
         DropdownMenu(
-            listItems = listOf("24", "25", "26", "27", "28", "29", "30"),
+            listItems = listOf("30", "29", "28", "27", "26", "25", "24", "23", "22", "21", "20", "19", "18", "17", "16", "15", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"),
             menuLabel = "Mask Bits",
             modifier = Modifier
         )
         DropdownMenu(
-            listItems = listOf("255.255.255.240"),
-            menuLabel = "Subnet mask",
+            listItems = listOf("255.255.255.252", "255.255.255.248", "255.255.255.240", "255.255.255.224", "255.255.255.192", "255.255.255.128", "255.255.255.0", "255.255.254.0", "255.255.252.0", "255.255.248.0", "255.255.240.0", "255.255.224.0", "255.255.192.0", "255.255.128.0", "255.255.0.0", "255.254.0.0", "255.252.0.0", "255.248.0.0", "255.240.0.0", "255.224.0.0", "255.192.0.0", "255.128.0.0", "255.0.0.0", "254.0.0.0", "252.0.0.0", "248.0.0.0", "240.0.0.0", "224.0.0.0", "192.0.0.0", "128.0.0.0"),
+            menuLabel = "Subnet Mask",
             modifier = Modifier
         )
         DropdownMenu(
-            listItems = listOf("14"),
+            listItems = listOf("2", "6", "14", "30", "62", "126", "254", "510", "1022", "2046", "4094", "8190", "16382", "32766", "65534", "131070", "262142", "524286", "1048574", "2097150", "4194302", "8388606", "16777214", "33554430", "67108862", "134217726", "268435454", "536870910", "1073741822", "2147483646"),
             menuLabel = "Hosts/Net",
             modifier = Modifier
         )
