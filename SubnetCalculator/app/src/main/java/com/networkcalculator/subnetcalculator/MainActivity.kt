@@ -25,16 +25,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.networkcalculator.subnetcalculator.ui.theme.SubnetCalculatorTheme
+import java.util.regex.Pattern
 import kotlin.math.log2
 import kotlin.math.pow
 
@@ -42,6 +46,7 @@ var maskBits by mutableStateOf(0)
 var subnetMask by mutableStateOf("")
 var hosts by mutableStateOf(0)
 var ipInput by mutableStateOf("192.168.0.1")
+var errorState by mutableStateOf("IP Address")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -125,9 +130,10 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Network Calculator",
-            modifier = Modifier
-                .padding(bottom = 16.dp)
+            text = "NETWORK CALCULATOR",
+            modifier = Modifier.padding(bottom = 16.dp),
+            fontSize = 23.sp,
+            fontWeight = FontWeight.Bold
         )
         EditIpAddress(
             modifier = Modifier
@@ -137,35 +143,80 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
         MaskBitsDropdownMenu()
         SubnetMaskDropdownMenu()
         HostsDropdownMenu()
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         ResultsDataTable(modifier = Modifier.padding(bottom = 32.dp))
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 
 @Composable
 fun ResultsDataTable(modifier: Modifier = Modifier) {
-    val broadcast = ipInput.split(".").toTypedArray()
+    val(lowerRange, upperRange, broadcast) = IpRange()
+
     val updatedResultsData: List<Pair<String, String>> = listOf(
-        "Network: " to "$ipInput/$maskBits",
-        "Netmask: " to subnetMask,
-        "Ip range: " to ipInput,
-        "Hosts/Net: " to "$hosts",
-        "Broadcast: " to ipInput
+        "Network:    " to "$ipInput/$maskBits",
+        "Netmask:    " to subnetMask,
+        "Ip range:    " to "$lowerRange \n$upperRange",
+        "Hosts/Net:    " to "$hosts",
+        "Broadcast:    " to broadcast
     )
 
     LazyColumn {
         itemsIndexed(updatedResultsData) { index, item ->
-            Row(modifier = Modifier.padding(8.dp)) {
-                Text(text = item.first, modifier = Modifier.weight(1f))
-                Text(text = item.second, modifier = Modifier.weight(1f))
+            Row(modifier = Modifier.padding(5.dp)) {
+                Text(text = item.first, modifier = Modifier.weight(1f), textAlign = TextAlign.End, fontWeight = FontWeight.Light)
+                Text(text = item.second, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
             }
-
             if (index < updatedResultsData.size - 1) {
-                Divider(modifier = Modifier.padding(horizontal = 8.dp))
+                Divider(modifier = Modifier.padding(horizontal = 25.dp))
             }
         }
     }
+}
+
+fun IpToBinary(ip: String): String {
+    var binary = ""
+    var tempString = ""
+    for (i in ip.split(".").toTypedArray()) {
+        repeat(8 - Integer.toBinaryString(i.toInt()).length){
+            tempString += "0"
+        }
+        binary += tempString + Integer.toBinaryString(i.toInt())
+        tempString = ""
+    }
+    return binary
+}
+
+fun BinaryToIp(binary: String): String {
+    var decimal = ""
+    for (i in binary.chunked(8)) {
+        decimal += i.toInt(2).toString() + "."
+    }
+    return decimal.dropLast(1)
+}
+
+fun IpRange(): Triple<String, String, String> {
+    var lower = ""
+    var upper = ""
+
+    repeat(32 - maskBits) {
+        upper += "1"
+        lower += "0"
+    }
+    val broadcast = BinaryToIp(IpToBinary(ipInput).dropLast(32 - maskBits) + upper)
+    lower = lower.dropLast(1) + "1"
+    upper = upper.dropLast(1) + "0"
+
+    return Triple(
+        BinaryToIp(IpToBinary(ipInput).dropLast(32 - maskBits) + lower),
+        BinaryToIp(IpToBinary(ipInput).dropLast(32 - maskBits) + upper),
+        broadcast
+    )
+}
+
+fun isValidIPAddress(ip: String): Boolean {
+    val reg0To255 = ("(\\d{1,2}|(0|1)\\" + "d{2}|2[0-4]\\d|25[0-5])")
+    return Pattern.compile(reg0To255 + "\\." + reg0To255 + "\\." + reg0To255 + "\\." + reg0To255).matcher(ip).matches()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -312,10 +363,19 @@ fun HostsDropdownMenu(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditIpAddress(modifier: Modifier = Modifier) {
+    var tempIpInput by remember { mutableStateOf(ipInput) }
     OutlinedTextField(
-        value = ipInput,
-        label = { Text("IP Address") },
-        onValueChange = { ipInput = it },
+        value = tempIpInput,
+        label = { Text(errorState) },
+        onValueChange = {
+            tempIpInput = it
+            if (isValidIPAddress(tempIpInput)) {
+                ipInput = tempIpInput
+                errorState = "IP Address"
+            } else {
+                errorState = "Invalid IP Address"
+            }
+                        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         maxLines = 1,
         modifier = Modifier
