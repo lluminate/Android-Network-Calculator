@@ -1,8 +1,10 @@
 package com.networkcalculator.subnetcalculator
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -48,7 +51,7 @@ var subnetMask by mutableStateOf("")
 var hosts by mutableStateOf(0)
 var ipInput by mutableStateOf("192.168.0.1")
 var errorState by mutableStateOf("IP Address")
-val radioOptions = listOf("Decimal", "Hexadecimal", "Binary")
+val radioOptions = listOf("Dec", "Hex", "Bin")
 var selectedRadioOption by mutableStateOf(radioOptions[0])
 
 class MainActivity : ComponentActivity() {
@@ -90,7 +93,7 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
         MaskBitsDropdownMenu()
         SubnetMaskDropdownMenu()
         HostsDropdownMenu()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "NOTATION",
             modifier = Modifier.padding(bottom = 8.dp),
@@ -98,7 +101,7 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
             fontWeight = FontWeight.Bold
             )
         RadioButtonResults()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         ResultsDataTable(modifier = Modifier.padding(bottom = 32.dp))
         Spacer(modifier = Modifier.height(80.dp))
     }
@@ -107,7 +110,11 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
 
 @Composable
 fun RadioButtonResults() {
-    Row( horizontalArrangement = Arrangement.SpaceEvenly ) {
+    Row( horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically ) {
+        Text(
+            text = "Notation",
+            modifier = Modifier.padding(horizontal = 10.dp),
+        )
         radioOptions.forEach { option ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -198,10 +205,10 @@ fun ResultsDataTable(modifier: Modifier = Modifier) {
         }
         radioOptions[2] -> {
             updatedResultsData = listOf(
-                "Network:    " to ipToBinary(ipToNetwork(ipInput)),
-                "Netmask:    " to ipToBinary(subnetMask),
-                "Ip range:    " to "${ipToBinary(lowerRange)} \n${ipToBinary(upperRange)}",
-                "Broadcast:    " to ipToBinary(broadcast)
+                "Network:    " to ipToBinary(ipToNetwork(ipInput)).chunked(8).joinToString("."),
+                "Netmask:    " to ipToBinary(subnetMask).chunked(8).joinToString("."),
+                "Ip range:    " to "${ipToBinary(lowerRange).chunked(8).joinToString(".")}\n${ipToBinary(upperRange).chunked(8).joinToString(".")}",
+                "Broadcast:    " to ipToBinary(broadcast).chunked(8).joinToString(".")
             )
 
             LazyColumn {
@@ -222,9 +229,12 @@ fun ResultsDataTable(modifier: Modifier = Modifier) {
                         }
                         Text(
                             text = item.second,
-                            modifier = Modifier.padding(5.dp),
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .fillMaxWidth(),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp
+                            textAlign = TextAlign.Right,
+                            fontSize = 12.sp
                         )
                     }
                     if (index < updatedResultsData.size - 1) {
@@ -619,13 +629,19 @@ fun EditIpAddress(modifier: Modifier = Modifier) {
 
 
 @Preview(
-    showBackground = true,
     showSystemUi = true,
-    name = "Light Mode"
+    name = "Light Mode", device = "spec:width=1080px,height=2340px,dpi=440", showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
 )
 @Composable
 fun SubnetCalculatorPreview() {
     SubnetCalculatorTheme {
-        NetworkCalculatorLayout()
+        // A surface container using the 'background' color from the theme
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            NetworkCalculatorLayout()
+        }
     }
 }
