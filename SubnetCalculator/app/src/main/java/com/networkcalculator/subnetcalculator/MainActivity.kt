@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +22,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +48,8 @@ var subnetMask by mutableStateOf("")
 var hosts by mutableStateOf(0)
 var ipInput by mutableStateOf("192.168.0.1")
 var errorState by mutableStateOf("IP Address")
+val radioOptions = listOf("Decimal", "Hexadecimal", "Binary")
+var selectedRadioOption by mutableStateOf(radioOptions[0])
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,6 +91,14 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
         SubnetMaskDropdownMenu()
         HostsDropdownMenu()
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "NOTATION",
+            modifier = Modifier.padding(bottom = 8.dp),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+            )
+        RadioButtonResults()
+        Spacer(modifier = Modifier.height(16.dp))
         ResultsDataTable(modifier = Modifier.padding(bottom = 32.dp))
         Spacer(modifier = Modifier.height(80.dp))
     }
@@ -94,53 +106,131 @@ fun NetworkCalculatorLayout(modifier: Modifier = Modifier) {
 
 
 @Composable
-fun ResultsDataTable(modifier: Modifier = Modifier) {
-    val (lowerRange, upperRange, broadcast) = ipRange()
-    var updatedResultsData: List<Pair<String, String>>
-
-    if () {
-        updatedResultsData = listOf(
-            "Network:    " to "${ipToNetwork(ipInput)}/$maskBits",
-            "Netmask:    " to subnetMask,
-            "Ip range:    " to "$lowerRange \n$upperRange",
-            "Hosts/Net:    " to "$hosts",
-            "Broadcast:    " to broadcast
-        )
-    } else if () {
-        updatedResultsData = listOf(
-            "Network:    " to "${ipToHex(ipToNetwork(ipInput))}/${toToDigitHex(maskBits)}",
-            "Netmask:    " to ipToHex(subnetMask),
-            "Ip range:    " to "${ipToHex(lowerRange)} \n${ipToHex(upperRange)}",
-            "Hosts/Net:    " to "${toToDigitHex(hosts)}",
-            "Broadcast:    " to ipToHex(broadcast)
-        )
-    } else if () {
-        updatedResultsData = listOf(
-            "Network:    " to "${ipToNetwork(ipInput)}/$maskBits",
-            "Netmask:    " to subnetMask,
-            "Ip range:    " to "$lowerRange \n$upperRange",
-            "Hosts/Net:    " to "$hosts",
-            "Broadcast:    " to broadcast
-        )
-    }
-
-    LazyColumn {
-        itemsIndexed(updatedResultsData) { index, item ->
-            Row(modifier = Modifier.padding(5.dp)) {
-                Text(
-                    text = item.first,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.End,
-                    fontWeight = FontWeight.Light
+fun RadioButtonResults() {
+    Row( horizontalArrangement = Arrangement.SpaceEvenly ) {
+        radioOptions.forEach { option ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 0.dp)
+            ) {
+                RadioButton(
+                    selected = (option == selectedRadioOption),
+                    onClick = { selectedRadioOption = option },
+                    modifier = Modifier.size(8.dp)
                 )
                 Text(
-                    text = item.second,
-                    modifier = Modifier.weight(1f),
-                    fontWeight = FontWeight.Bold
+                    text = option,
+                    modifier = Modifier.padding(horizontal = 11.dp),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
             }
-            if (index < updatedResultsData.size - 1) {
-                Divider(modifier = Modifier.padding(horizontal = 25.dp))
+        }
+    }
+}
+
+
+@Composable
+fun ResultsDataTable(modifier: Modifier = Modifier) {
+    val (lowerRange, upperRange, broadcast) = ipRange()
+    var updatedResultsData: List<Pair<String, String>> = listOf()
+
+    when (selectedRadioOption) {
+        radioOptions[0] -> {
+            updatedResultsData = listOf(
+                "Network:    " to "${ipToNetwork(ipInput)}/$maskBits",
+                "Netmask:    " to subnetMask,
+                "Ip range:    " to "$lowerRange \n$upperRange",
+                "Hosts/Net:    " to "$hosts",
+                "Broadcast:    " to broadcast
+            )
+
+            LazyColumn {
+                itemsIndexed(updatedResultsData) { index, item ->
+                    Row(modifier = Modifier.padding(5.dp)) {
+                        Text(
+                            text = item.first,
+                            modifier = Modifier.weight(0.65f),
+                            textAlign = TextAlign.End,
+                            fontWeight = FontWeight.Light
+                        )
+                        Text(
+                            text = item.second,
+                            modifier = Modifier.weight(1f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (index < updatedResultsData.size - 1) {
+                        Divider(modifier = Modifier.padding(horizontal = 25.dp))
+                    }
+                }
+            }
+        }
+        radioOptions[1] -> {
+            updatedResultsData = listOf(
+                "Network:    " to "${ipToHex(ipToNetwork(ipInput))}/${Integer.toHexString(maskBits)}",
+                "Netmask:    " to ipToHex(subnetMask),
+                "Ip range:    " to "${ipToHex(lowerRange)} \n${ipToHex(upperRange)}",
+                "Hosts/Net:    " to Integer.toHexString(hosts),
+                "Broadcast:    " to ipToHex(broadcast)
+            )
+
+            LazyColumn {
+                itemsIndexed(updatedResultsData) { index, item ->
+                    Row(modifier = Modifier.padding(5.dp)) {
+                        Text(
+                            text = item.first,
+                            modifier = Modifier.weight(0.65f),
+                            textAlign = TextAlign.End,
+                            fontWeight = FontWeight.Light
+                        )
+                        Text(
+                            text = item.second,
+                            modifier = Modifier.weight(1f),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (index < updatedResultsData.size - 1) {
+                        Divider(modifier = Modifier.padding(horizontal = 25.dp))
+                    }
+                }
+            }
+        }
+        radioOptions[2] -> {
+            updatedResultsData = listOf(
+                "Network:    " to ipToBinary(ipToNetwork(ipInput)),
+                "Netmask:    " to ipToBinary(subnetMask),
+                "Ip range:    " to "${ipToBinary(lowerRange)} \n${ipToBinary(upperRange)}",
+                "Broadcast:    " to ipToBinary(broadcast)
+            )
+
+            LazyColumn {
+                itemsIndexed(updatedResultsData) { index, item ->
+                    Column {
+                        Row(modifier = Modifier.padding(5.dp)) {
+                            Text(
+                                text = item.first,
+                                modifier = Modifier.weight(0.65f),
+                                textAlign = TextAlign.End,
+                                fontWeight = FontWeight.Light
+                            )
+                            Text(
+                                text = "",
+                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = item.second,
+                            modifier = Modifier.padding(5.dp),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+                    if (index < updatedResultsData.size - 1) {
+                        Divider(modifier = Modifier.padding(horizontal = 25.dp))
+                    }
+                }
             }
         }
     }
@@ -158,21 +248,6 @@ fun ipToHex(ip: String): String {
         tempString = ""
     }
     return hex.dropLast(1)
-}
-
-
-fun toToDigitHex(num: Int) {
-    var hex = ""
-    var tempString = ""
-    if (Integer.toHexString(num).length < 2) {
-        repeat(2 - Integer.toHexString(num).length) {
-            tempString += "0"
-        }
-        hex += tempString + Integer.toHexString(num)
-        tempString = ""
-    } else {
-        hex += Integer.toHexString(num)
-    }
 }
 
 
